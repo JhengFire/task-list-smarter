@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>待办清单</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar" aria-label="任务导航" data-i18n-aria-label="taskNavigation">
+        <div class="brand">
+          <div class="brand-mark" data-i18n="brandMark">待</div>
+          <div>
+            <h1 data-i18n="appName">待办清单</h1>
+            <p id="todayLabel"></p>
+          </div>
+          <button id="openSettings" class="settings-trigger" type="button" title="设置" data-i18n-title="settings">
+            <span class="settings-icon" aria-hidden="true">⚙</span>
+            <span class="settings-label" data-i18n="settings">设置</span>
+          </button>
+        </div>
+
+        <nav class="filters" aria-label="筛选任务" data-i18n-aria-label="taskFilters">
+          <button class="filter" data-filter="overdue"><span data-i18n="overdue">超期未处理</span><strong id="overdueCount">0</strong></button>
+          <button class="filter active" data-filter="active"><span data-i18n="active">进行中</span><strong id="activeCount">0</strong></button>
+          <button class="filter" data-filter="today"><span data-i18n="today">今天提醒</span><strong id="todayCount">0</strong></button>
+          <button class="filter" data-filter="all"><span data-i18n="all">全部任务</span><strong id="allCount">0</strong></button>
+          <button class="filter" data-filter="completed"><span data-i18n="completed">已完成</span><strong id="doneCount">0</strong></button>
+        </nav>
+
+        <div class="sidebar-divider"></div>
+        <button id="scheduledTasksButton" class="schedule-nav" type="button">
+          <span class="schedule-nav-icon" aria-hidden="true">◷</span>
+          <span data-i18n="scheduledTasks">定时任务</span>
+          <strong id="scheduledCount">0</strong>
+        </button>
+      </aside>
+
+      <section class="workspace">
+        <header id="mainTopbar" class="topbar">
+          <div>
+            <p class="eyebrow" data-i18n="workspace">任务工作台</p>
+            <h2 id="viewTitle">进行中</h2>
+          </div>
+          <div class="top-actions">
+            <button id="clearCompleted" class="text-button" type="button" data-i18n="clearCompleted">清理已完成</button>
+            <button id="compactButton" class="text-button" type="button" data-i18n="compactWindow">桌面小窗</button>
+            <button id="newTaskButton" class="primary-button" type="button" data-i18n="newTask">新增任务</button>
+          </div>
+        </header>
+
+        <div id="taskWorkspaceView">
+          <form id="taskForm" class="task-form hidden">
+          <div class="form-grid">
+            <label class="field wide">
+              <span data-i18n="taskContent">任务内容</span>
+              <input id="titleInput" name="title" autocomplete="off" placeholder="例如：17:30 前整理今日事项" data-i18n-placeholder="taskPlaceholder" required />
+            </label>
+            <label class="field">
+              <span data-i18n="reminderTime">提醒时间</span>
+              <input id="reminderInput" name="reminderAt" type="datetime-local" />
+            </label>
+            <label class="field">
+              <span data-i18n="priority">优先级</span>
+              <select id="priorityInput" name="priority">
+                <option value="medium" data-i18n="priorityMedium">普通</option>
+                <option value="high" data-i18n="priorityHigh">重要</option>
+                <option value="low" data-i18n="priorityLow">低优先</option>
+              </select>
+            </label>
+          </div>
+          <label class="field notes-field">
+            <span data-i18n="notes">备注</span>
+            <textarea id="notesInput" name="notes" rows="3" placeholder="可以写地点、链接、补充说明" data-i18n-placeholder="notesPlaceholder"></textarea>
+          </label>
+          <div class="form-actions">
+            <button id="cancelEdit" class="text-button hidden" type="button" data-i18n="cancelEdit">取消编辑</button>
+            <button id="submitTask" class="primary-button" type="submit" data-i18n="saveTask">保存任务</button>
+          </div>
+          </form>
+
+          <div class="toolbar">
+            <label class="search-box">
+              <span data-i18n="search">搜索</span>
+              <input id="searchInput" type="search" placeholder="输入关键字筛选" data-i18n-placeholder="searchPlaceholder" />
+            </label>
+            <div id="nextReminder" class="next-reminder">暂无提醒</div>
+          </div>
+
+          <section id="taskList" class="task-list" aria-live="polite"></section>
+          <section id="emptyState" class="empty-state hidden">
+            <h3 data-i18n="emptyTitle">这里很清爽</h3>
+            <p data-i18n="emptyDescription">添加一个任务，设置提醒时间，程序隐藏到后台也会继续提醒。</p>
+          </section>
+        </div>
+
+        <section id="scheduleView" class="schedule-view hidden">
+          <header class="schedule-page-header">
+            <div>
+              <p class="eyebrow" data-i18n="scheduleEyebrow">自动化安排</p>
+              <h2 data-i18n="schedulePageTitle">定时任务</h2>
+              <p data-i18n="schedulePageDescription">用点击选择的方式安排重复提醒，到点和提前提醒都会通知你。</p>
+            </div>
+            <div class="schedule-page-stat">
+              <strong id="scheduleActiveCount">0</strong>
+              <span data-i18n="scheduleActive">个启用中</span>
+            </div>
+          </header>
+
+          <form id="scheduleForm" class="schedule-form">
+            <div class="schedule-form-heading">
+              <div>
+                <p class="modal-eyebrow" data-i18n="scheduleSetup">SCHEDULE SETUP</p>
+                <h3 id="scheduleFormTitle" data-i18n="createSchedule">创建定时任务</h3>
+              </div>
+              <span class="schedule-form-hint" data-i18n="scheduleFormHint">不需要编辑 Cron 表达式</span>
+            </div>
+
+            <div class="schedule-form-grid">
+              <label class="field schedule-title-field">
+                <span data-i18n="scheduleTaskName">任务内容</span>
+                <input id="scheduleTitleInput" autocomplete="off" placeholder="例如：晨间整理、服药、站会" data-i18n-placeholder="scheduleTaskPlaceholder" required />
+              </label>
+              <label class="field">
+                <span data-i18n="runTime">执行时间</span>
+                <input id="scheduleTimeInput" type="time" value="09:00" required />
+              </label>
+              <label class="field">
+                <span data-i18n="advanceReminder">提前提醒</span>
+                <select id="scheduleAdvanceInput">
+                  <option value="0" data-i18n="advanceNone">到点提醒</option>
+                  <option value="5">提前 5 分钟</option>
+                  <option value="10">提前 10 分钟</option>
+                  <option value="15" selected>提前 15 分钟</option>
+                  <option value="30">提前 30 分钟</option>
+                  <option value="60">提前 1 小时</option>
+                  <option value="1440">提前 1 天</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="cycle-section">
+              <div class="cycle-heading">
+                <span class="field-label" data-i18n="cycle">周期</span>
+                <span id="cycleDescription" class="field-help"></span>
+              </div>
+              <div id="cycleChoices" class="cycle-choices" role="group" aria-label="选择周期">
+                <button class="cycle-choice active" data-cycle="daily" type="button" data-i18n="cycleDaily">每天</button>
+                <button class="cycle-choice" data-cycle="weekdays" type="button" data-i18n="cycleWeekdays">工作日</button>
+                <button class="cycle-choice" data-cycle="weekly" type="button" data-i18n="cycleWeekly">每周</button>
+                <button class="cycle-choice" data-cycle="monthly" type="button" data-i18n="cycleMonthly">每月</button>
+                <button class="cycle-choice" data-cycle="custom" type="button" data-i18n="cycleCustom">自定义星期</button>
+                <button class="cycle-choice" data-cycle="interval" type="button" data-i18n="cycleInterval">每隔几天</button>
+              </div>
+
+              <div id="weekdayOptions" class="cycle-detail hidden">
+                <span class="field-help" data-i18n="weekdayHint">选择执行日</span>
+                <div class="weekday-choices">
+                  <button class="weekday-choice" data-weekday="1" type="button">一</button>
+                  <button class="weekday-choice" data-weekday="2" type="button">二</button>
+                  <button class="weekday-choice" data-weekday="3" type="button">三</button>
+                  <button class="weekday-choice" data-weekday="4" type="button">四</button>
+                  <button class="weekday-choice" data-weekday="5" type="button">五</button>
+                  <button class="weekday-choice" data-weekday="6" type="button">六</button>
+                  <button class="weekday-choice" data-weekday="0" type="button">日</button>
+                </div>
+              </div>
+
+              <label id="monthlyOption" class="field cycle-detail hidden">
+                <span data-i18n="monthDay">每月第几天</span>
+                <select id="scheduleDayInput">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                  <option value="9">9</option>
+                  <option value="10">10</option>
+                  <option value="11">11</option>
+                  <option value="12">12</option>
+                  <option value="13">13</option>
+                  <option value="14">14</option>
+                  <option value="15">15</option>
+                  <option value="16">16</option>
+                  <option value="17">17</option>
+                  <option value="18">18</option>
+                  <option value="19">19</option>
+                  <option value="20">20</option>
+                  <option value="21">21</option>
+                  <option value="22">22</option>
+                  <option value="23">23</option>
+                  <option value="24">24</option>
+                  <option value="25">25</option>
+                  <option value="26">26</option>
+                  <option value="27">27</option>
+                  <option value="28">28</option>
+                  <option value="29">29</option>
+                  <option value="30">30</option>
+                  <option value="31">31</option>
+                </select>
+              </label>
+
+              <label id="intervalOption" class="field cycle-detail hidden">
+                <span data-i18n="intervalDays">间隔天数</span>
+                <input id="scheduleIntervalInput" type="number" min="1" max="365" value="2" />
+              </label>
+            </div>
+
+            <div class="schedule-preview">
+              <span class="schedule-preview-icon" aria-hidden="true">↗</span>
+              <div>
+                <span class="field-help" data-i18n="nextExecution">下一次执行</span>
+                <strong id="schedulePreview">--</strong>
+              </div>
+            </div>
+
+            <label class="field">
+              <span data-i18n="notes">备注</span>
+              <textarea id="scheduleNotesInput" rows="2" placeholder="可以补充地点、链接或执行说明" data-i18n-placeholder="scheduleNotesPlaceholder"></textarea>
+            </label>
+
+            <div class="form-actions">
+              <button id="cancelScheduleEdit" class="text-button hidden" type="button" data-i18n="cancelEdit">取消编辑</button>
+              <button class="primary-button" type="submit" data-i18n="saveSchedule">保存定时任务</button>
+            </div>
+          </form>
+
+          <section class="schedule-list-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow" data-i18n="yourSchedules">你的安排</p>
+                <h3 data-i18n="scheduleListTitle">已创建的定时任务</h3>
+              </div>
+              <span id="scheduleListCount" class="list-count">0</span>
+            </div>
+            <div id="scheduledList" class="scheduled-list" aria-live="polite"></div>
+            <section id="scheduleEmptyState" class="empty-state hidden">
+              <h3 data-i18n="scheduleEmptyTitle">还没有定时任务</h3>
+              <p data-i18n="scheduleEmptyDescription">创建一个重复提醒，它会按周期自动运行。</p>
+            </section>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <main id="compactShell" class="compact-shell" aria-label="待办桌面小窗" data-i18n-aria-label="compactAriaLabel">
+      <header class="compact-header">
+        <div class="compact-drag-region">
+          <div class="compact-mark" data-i18n="brandMark">待</div>
+          <div>
+            <h2 data-i18n="inProgress">正在进行</h2>
+            <p id="compactSummary">0 项任务</p>
+          </div>
+        </div>
+        <div class="compact-controls no-drag">
+          <button id="compactPin" class="compact-control" type="button" title="置顶" data-i18n-title="pin">置顶</button>
+          <button id="compactExpand" class="compact-control" type="button" title="打开完整窗口" data-i18n-title="openMain">展开</button>
+          <button id="compactClose" class="compact-control close" type="button" title="回到后台" data-i18n-title="hideCompact">×</button>
+        </div>
+      </header>
+      <section id="compactTaskList" class="compact-task-list" aria-live="polite"></section>
+      <section id="compactEmptyState" class="compact-empty hidden">
+        <strong data-i18n="noActiveTasks">当前没有进行中的任务</strong>
+        <button id="compactAddTask" class="primary-button" type="button" data-i18n="newTask">新增任务</button>
+      </section>
+      <footer class="compact-footer no-drag">
+        <button id="compactAddFooter" class="text-button" type="button" data-i18n="addTask">+ 新增任务</button>
+        <span data-i18n="dragToMove">拖动标题栏移动</span>
+      </footer>
+    </main>
+
+    <main id="alarmShell" class="alarm-shell" aria-label="待办提醒弹框" data-i18n-aria-label="alarmAriaLabel">
+      <header class="alarm-header">
+        <div>
+          <p data-i18n="todoReminder">待办提醒</p>
+          <h2 id="alarmTitle" data-i18n="reminderArrived">提醒到了</h2>
+        </div>
+        <button id="alarmDismiss" class="alarm-close no-drag" type="button" title="关闭" data-i18n-title="close">×</button>
+      </header>
+      <section class="alarm-body">
+        <p id="alarmNotes" class="alarm-notes"></p>
+        <div id="alarmTime" class="alarm-time"></div>
+      </section>
+      <footer class="alarm-actions no-drag">
+        <button id="alarmComplete" class="primary-button" type="button" data-i18n="complete">完成</button>
+        <button id="alarmPostpone" class="text-button" type="button" data-i18n="postpone">延期</button>
+        <button id="alarmEdit" class="text-button" type="button" data-i18n="edit">编辑</button>
+      </footer>
+    </main>
+
+    <div id="settingsModal" class="modal-backdrop hidden" role="presentation">
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <header class="modal-header">
+          <div>
+            <p class="modal-eyebrow" data-i18n="preferences">PREFERENCES</p>
+            <h2 id="settingsTitle" data-i18n="settings">设置</h2>
+          </div>
+          <button id="closeSettings" class="modal-close" type="button" title="关闭" data-i18n-title="close">×</button>
+        </header>
+        <div class="modal-body settings-body">
+          <label class="field">
+            <span data-i18n="language">语言</span>
+            <select id="languageInput">
+              <option value="zh" data-i18n="chinese">简体中文</option>
+              <option value="en" data-i18n="english">English</option>
+            </select>
+          </label>
+          <div class="settings-options">
+            <label class="switch-row">
+              <input id="autoStart" type="checkbox" />
+              <span data-i18n="autoStart">开机自动启动</span>
+            </label>
+            <label class="switch-row">
+              <input id="minimizeToTray" type="checkbox" />
+              <span data-i18n="minimizeToTray">关闭窗口时后台常驻</span>
+            </label>
+            <label class="switch-row">
+              <input id="alwaysOnTop" type="checkbox" />
+              <span data-i18n="alwaysOnTop">桌面小窗置顶</span>
+            </label>
+          </div>
+          <button id="openDataFolder" class="subtle-button" type="button" data-i18n="openDataFolder">打开数据目录</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="postponeModal" class="modal-backdrop hidden" role="presentation">
+      <section class="modal postpone-modal" role="dialog" aria-modal="true" aria-labelledby="postponeTitle">
+        <header class="modal-header">
+          <div>
+            <p class="modal-eyebrow" data-i18n="taskSchedule">TASK SCHEDULE</p>
+            <h2 id="postponeTitle" data-i18n="postponeTask">延期任务</h2>
+          </div>
+          <button id="closePostpone" class="modal-close" type="button" title="关闭" data-i18n-title="close">×</button>
+        </header>
+        <form id="postponeForm" class="modal-body">
+          <label class="field">
+            <span data-i18n="newReminderTime">新的提醒时间</span>
+            <input id="postponeInput" type="datetime-local" required />
+          </label>
+          <div class="modal-footer">
+            <button id="cancelPostpone" class="text-button" type="button" data-i18n="cancel">取消</button>
+            <button class="primary-button" type="submit" data-i18n="confirmPostpone">确认延期</button>
+          </div>
+        </form>
+      </section>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>待办清单</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #202124;
+        --muted: #6a6f78;
+        --accent: #176f83;
+        --warm: #d86f45;
+        --line: rgba(84, 75, 63, 0.14);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        margin: 0;
+        overflow: hidden;
+        color: var(--ink);
+        font-family: "Microsoft YaHei UI", "Segoe UI", system-ui, sans-serif;
+        background: linear-gradient(135deg, #f7f2e8 0%, #eef4f2 48%, #f4efe8 100%);
+      }
+
+      .splash {
+        width: 100%;
+        padding: 34px 40px 30px;
+        text-align: center;
+        -webkit-app-region: drag;
+      }
+
+      .mark {
+        display: grid;
+        place-items: center;
+        width: 62px;
+        height: 62px;
+        margin: 0 auto 18px;
+        border-radius: 14px;
+        color: #fff;
+        font-size: 26px;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--accent), var(--warm));
+        box-shadow: 0 14px 28px rgba(23, 111, 131, 0.22);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 25px;
+        letter-spacing: 0;
+      }
+
+      .status {
+        min-height: 22px;
+        margin: 9px 0 25px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .progress-track {
+        width: 100%;
+        height: 6px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--line);
+      }
+
+      .progress-value {
+        width: 0%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--accent), var(--warm));
+        transition: width 0.24s ease;
+      }
+
+      .progress-label {
+        display: block;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 11px;
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="splash" aria-live="polite">
+      <div id="mark" class="mark">待</div>
+      <h1 id="title">待办清单</h1>
+      <p id="status" class="status">正在启动...</p>
+      <div class="progress-track" aria-hidden="true"><div id="progressValue" class="progress-value"></div></div>
+      <span id="progressLabel" class="progress-label">0%</span>
+    </main>
+    <script>
+      const elements = {
+        mark: document.querySelector('#mark'),
+        title: document.querySelector('#title'),
+        status: document.querySelector('#status'),
+        value: document.querySelector('#progressValue'),
+        label: document.querySelector('#progressLabel')
+      };
+
+      window.todoApi.onStartupProgress(({ progress, status }) => {
+        const safeProgress = Math.max(0, Math.min(100, Number(progress) || 0));
+        elements.value.style.width = `${safeProgress}%`;
+        elements.label.textContent = `${safeProgress}%`;
+        elements.status.textContent = status;
+      });
+
+      window.todoApi.onStartupLanguage(({ language }) => {
+        const english = language === 'en';
+        document.documentElement.lang = english ? 'en' : 'zh-CN';
+        document.title = english ? 'Todo List' : '待办清单';
+        elements.mark.textContent = english ? 'T' : '待';
+        elements.title.textContent = english ? 'Todo List' : '待办清单';
+        elements.status.textContent = english ? 'Starting...' : '正在启动...';
+      });
+    </script>
+  </body>
+</html>

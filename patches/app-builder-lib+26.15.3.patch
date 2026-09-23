@@ -1,0 +1,27 @@
+diff --git a/node_modules/app-builder-lib/out/util/electronGet.js b/node_modules/app-builder-lib/out/util/electronGet.js
+index a941f9d..80223a8 100644
+--- a/node_modules/app-builder-lib/out/util/electronGet.js
++++ b/node_modules/app-builder-lib/out/util/electronGet.js
+@@ -184,7 +184,21 @@ async function extractArchive(file, dir) {
+             throw new Error(`Extraction of ${path.basename(file)} produced no files`);
+         }
+         await fs.rm(dir, { recursive: true, force: true });
+-        await fs.rename(tmpDir, dir);
++        // Retry the rename with a delay: antivirus real-time scanning can hold
++        // transient handles on freshly extracted files, causing EPERM/EBUSY.
++        for (let attempt = 1; ; attempt++) {
++            try {
++                await fs.rename(tmpDir, dir);
++                break;
++            }
++            catch (e) {
++                if (attempt >= 10 || !(e && (e.code === "EPERM" || e.code === "EBUSY" || e.code === "EACCES"))) {
++                    throw e;
++                }
++                builder_util_1.log.warn({ attempt, error: e.message }, "rename of extracted directory blocked, retrying");
++                await new Promise((resolve) => setTimeout(resolve, 10000));
++            }
++        }
+     }
+     finally {
+         await release().catch(err => builder_util_1.log.warn({ err }, "failed to release lockfile"));

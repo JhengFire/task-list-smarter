@@ -1,0 +1,52 @@
+{
+  "name": "desktop-todo-list",
+  "version": "1.0.0",
+  "description": "A polished Windows desktop todo list with tray, alarms, and auto-start.",
+  "main": "main.js",
+  "author": "Codex",
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "patch-package",
+    "start": "electron .",
+    "pack": "electron-builder --win portable",
+    "dist": "electron-builder --win nsis portable"
+  },
+  "devDependencies": {
+    "electron": "^38.1.0",
+    "electron-builder": "^26.0.12",
+    "patch-package": "8.0.1"
+  },
+  "build": {
+    "appId": "com.codex.todo.desktop",
+    "productName": "待办清单",
+    "copyright": "Copyright © 2026",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "待办清单"
+    }
+  },
+  "allowScripts": {
+    "electron@38.8.6": true,
+    "electron-winstaller@5.4.0": true
+  }
+}
